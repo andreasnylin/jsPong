@@ -1,0 +1,212 @@
+<script>
+
+var d = document, 
+    w = 20,
+    h = 9,
+    p1 = { y: 3, x: 0, p: 0, v: -1, a: true, s: 10 },
+    p2 = { y: 3, x: w - 1, p: 0, v: 1, a: true, s: 50 },
+    b = { y: 4, x: 9, out: false, vx: 0, vy: 0 },
+    gf = new Array(h + 1).join(new Array(w + 1).join(' ') + '\n'),
+    ngf = '',
+    paus = 10,
+    bd = [0,0];
+
+function moveBall() {
+    b.x += b.vx;
+    b.y += b.vy;
+}
+
+function movePaddle(p) {
+    // move in the direction of the ball and skill is enough
+    if(p.a  && p.s >= rnd(1, 100)) {
+
+        var ballDestY = getBallDestination()[1],
+            pCenter = p.y + 1;
+
+        if(ballDestY === pCenter) {
+            //console.log('ball is same stay')
+            p.v = 0;
+        }
+        else if(ballDestY > pCenter) {
+            //console.log('ball is below go down')
+            p.v = 1;
+        }
+        else if(ballDestY < pCenter) {
+            //console.log('ball is above go up')
+            p.v = -1;
+        }
+    }
+
+    // needs to move sometimes if ball y is 0
+
+    p.y += p.v;
+
+    if(p.y <= 0) {
+        p.y = 0;
+        if(p.a) { p.v = 1; }
+    }
+    else if(p.y + 3 >= h) {
+        p.y = h - 3;
+        if(p.a) { p.v = -1; }
+    }
+    
+}
+
+function checkBounds() {
+    if(b.x >= w - 1) {
+        p1.p += 1;
+        b.out = true;
+    }
+    else if(b.x <= 0) {
+        p2.p += 1;
+        b.out = true;
+    }
+
+    if(b.y >= h - 1) {
+        b.y = h - 1;
+        b.vy = -1;
+    }
+    else if(b.y <= 0) {
+        b.y = 0;
+        b.vy = 1;
+    }
+}
+
+function getBallDestination() {
+    var x = b.x, y = b.y;
+
+    while(x > 0 && x < w && y > 0 && y < h) {
+        x += b.vx;
+        y += b.vy;
+    }
+
+    bd = [x,y];
+
+    return [x, y];
+}
+
+function paddleHit(p) {
+    var nextCol = b.x + b.vx,
+        nextLine = b.y + b.vy;
+
+    if(nextCol === p.x && nextLine >= p.y && nextLine <= p.y + 2) {
+        if(b.vx === 1) {
+            b.vx = -1;
+        }
+        else {
+            b.vx = 1;
+        }
+
+        if(nextLine === p.y) {
+            //console.log('paddle hit top')
+            b.vy = -1;
+        }
+        else if(nextLine === p.y + 1) {
+            //console.log('paddle hit mid')
+            b.vy = 0;
+        }
+        else if(nextLine === p.y + 2) {
+            //console.log('paddle hit bottom')
+            b.vy = 1;
+        } 
+
+        return true;
+    }
+
+    return false;
+}
+
+function resetBall() {
+    b.y = 4;
+    b.x = 9;
+    b.vy = 0;
+    b.vx = 0;
+    b.out = false;
+}
+
+function setBallVelocity() {
+    b.vy = rnd(-1, 1);
+    b.vx = rnd(0, 1) ? 1 : -1;
+}
+
+function drawBall() {
+    var i = (b.y * w) + b.x + b.y;
+    insertChar(i, 'o');
+}
+
+function drawPaddle(p) {
+    var pt = p.y * w + p.x + p.y,
+        pm = pt + w + 1,
+        pb = pm + w + 1;
+
+    insertChar(pt, '|');
+    insertChar(pm, '|');
+    insertChar(pb, '|');
+}
+
+function insertChar(i, c) {
+    ngf = ngf.substr(0, i) + c + ngf.substr(i + 1);
+}
+
+function rnd(from, to) {    
+    return Math.floor(Math.random() * (to - from + 1) + from);
+}
+
+function main() {
+
+    if(paus > 0) {
+        paus--;
+
+        if(paus === 5) {
+           resetBall();
+        }
+        else if(paus === 0) {
+            setBallVelocity();
+        }
+    }
+    else {
+        
+        moveBall();
+        checkBounds();
+        if(!b.out) {
+            movePaddle(p1);
+            movePaddle(p2); 
+            paddleHit(p1);
+            paddleHit(p2);
+        }
+        else {
+            paus = 10;
+        }
+    }
+
+    ngf = gf;
+    drawPaddle(p1);
+    drawPaddle(p2);
+    drawBall();
+
+    // log the balls destination
+    //insertChar(bd[1] * w + bd[0], '@')
+
+    d.body.innerHTML = '<pre>' + ngf + 'Score:' + p1.p + '-' + p2.p;
+}
+
+setInterval(main, 200);
+
+d.onkeydown = function(e) {   
+    if(e.which === 38) {
+        if(p1.a) { p1.a = false; }
+        p1.v = -1;
+    }
+    else if(e.which === 40) {
+        if(p1.a) { p1.a = false; }
+        p1.v = 1;
+    }
+}
+
+d.onkeyup = function(e) {   
+    if(e.which === 38 || e.which === 40) {
+        if(p1.a) { p1.a = false; }
+        p1.v = 0;
+    }
+}
+</script>
